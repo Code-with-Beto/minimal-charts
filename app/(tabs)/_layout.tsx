@@ -28,36 +28,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Inputs",
+          title: "Charts",
           headerShown: true,
-          headerTitle: "Inputs",
+          headerTitle: "Home",
           headerTitleStyle: {
             fontSize: 32,
             fontWeight: "bold",
             textAlign: "left",
           },
-
           headerTitleAlign: "left",
           tabBarIcon: ({ color }) => (
             <Icon size={28} symbol="character.cursor.ibeam" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="buttons"
-        options={{
-          title: "Buttons",
-          headerShown: true,
-          headerTitle: "Buttons",
-          headerTitleStyle: {
-            fontSize: 32,
-            fontWeight: "bold",
-            textAlign: "left",
-          },
-
-          headerTitleAlign: "left",
-          tabBarIcon: ({ color }) => (
-            <Icon size={28} symbol="button.programmable" color={color} />
           ),
         }}
       />

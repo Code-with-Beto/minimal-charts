@@ -1,14 +1,11 @@
-import { Input } from "@/components/ui/Input";
+import MinimalChart from "@/components/MinimalChart";
 import { SafeAreaView, StyleSheet, View } from "react-native";
 
 export default function InputsScreen() {
   return (
     <SafeAreaView>
       <View style={styles.container}>
-        <Input placeholder="Search" color="white" variant="outline" />
-        <Input placeholder="Search" color="white" variant="soft" />
-        <Input placeholder="Search" color="white" variant="subtle" />
-        <Input placeholder="Search" color="white" variant="underline" />
+        <MinimalChart />
       </View>
     </SafeAreaView>
   );
@@ -19,8 +16,9 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     margin: "auto",
-    gap: 24,
-    marginTop: 48,
+    height: "auto",
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "gray",
   },
 });
