@@ -102,7 +102,7 @@ export default function MinimalChart() {
           yAxisThickness={0}
           xAxisThickness={0}
           hideYAxisText
-          xAxisLabelTextStyle={{ display: "flex" }}
+          xAxisLabelTextStyle={{ display: "none" }}
           showXAxisIndices={false}
           renderTooltip={() => null}
           disableScroll
