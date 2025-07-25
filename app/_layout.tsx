@@ -29,7 +29,7 @@ export default function RootLayout() {
           options={{
             headerLargeTitle: true,
             headerTitle: "Analytics Overview",
-            headerBlurEffect: "light",
+            headerBlurEffect: colorScheme as "light" | "dark",
             headerTransparent: true,
           }}
         />

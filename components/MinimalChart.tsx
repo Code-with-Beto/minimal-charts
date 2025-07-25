@@ -1,9 +1,5 @@
-import {
-  generateMonthlyData,
-  weeklyData,
-  yearlyData,
-} from "@/constants/DummyData";
-import { getColorValue } from "@/types/ui";
+import { generateMonthlyData } from "@/constants/DummyData";
+import { Color } from "@/constants/TWPalette";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
@@ -16,8 +12,6 @@ import {
 } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
-type TimeRange = "yearly" | "weekly" | "monthly";
-
 interface BarData {
   value: number;
   label?: string;
@@ -25,27 +19,57 @@ interface BarData {
   [key: string]: any;
 }
 
-// Apple-inspired color themes
+// Color themes using TWPalette
 const colorThemes = {
-  purple: { primary: "purple", gradient: ["purple", "pink"] },
-  blue: { primary: "blue", gradient: ["blue", "cyan"] },
-  green: { primary: "green", gradient: ["green", "emerald"] },
-  orange: { primary: "orange", gradient: ["orange", "amber"] },
-  pink: { primary: "pink", gradient: ["pink", "rose"] },
-  indigo: { primary: "indigo", gradient: ["indigo", "blue"] },
+  blue: { name: "blue", light: 500, dark: 600 },
+  purple: { name: "purple", light: 500, dark: 600 },
+  emerald: { name: "emerald", light: 500, dark: 600 },
+  orange: { name: "orange", light: 500, dark: 600 },
+  pink: { name: "pink", light: 500, dark: 600 },
+  cyan: { name: "cyan", light: 500, dark: 600 },
 } as const;
 
 type ColorTheme = keyof typeof colorThemes;
 
+// Reusable styles
+const createCardStyle = (isDark: boolean) => ({
+  backgroundColor: isDark ? Color.gray[800] : "#ffffff",
+  borderRadius: 16,
+  padding: 16,
+  boxShadow: "0px 2px 8px rgba(0,0,0,0.05)",
+});
+
+const createTextStyle = (
+  isDark: boolean,
+  type: "title" | "subtitle" | "label"
+) => {
+  const styles = {
+    title: {
+      fontSize: 28,
+      fontWeight: "700" as const,
+      color: isDark ? "#ffffff" : Color.gray[900],
+    },
+    subtitle: {
+      fontSize: 16,
+      color: isDark ? Color.gray[400] : Color.gray[600],
+    },
+    label: {
+      fontSize: 14,
+      color: isDark ? Color.gray[400] : Color.gray[600],
+    },
+  };
+  return styles[type];
+};
+
 export default function MinimalChart() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [colorTheme, setColorTheme] = useState<ColorTheme>("purple");
+  const [colorTheme, setColorTheme] = useState<ColorTheme>("blue");
   const isDarkMode = useColorScheme() === "dark";
 
   const theme = colorThemes[colorTheme];
+  const themeColor = Color[theme.name as keyof typeof Color];
 
   const getMonthName = (month: number) => {
     const months = [
@@ -82,41 +106,33 @@ export default function MinimalChart() {
     setSelectedBarIndex(null);
   };
 
-  const getDataForTimeRange = () => {
-    const baseData = (() => {
-      switch (timeRange) {
-        case "yearly":
-          return yearlyData;
-        case "monthly":
-          return generateMonthlyData(currentYear, currentMonth + 1);
-        case "weekly":
-        default:
-          return weeklyData;
-      }
-    })();
+  const monthlyData = generateMonthlyData(currentYear, currentMonth + 1);
 
-    // Add colors based on theme and dark mode
-    return baseData.map((item, index) => ({
+  // Calculate dynamic bar width to fit all days without scrolling
+  const screenWidth = Dimensions.get("window").width;
+  const chartPadding = 80; // Total padding (40 on each side)
+  const availableWidth = screenWidth - chartPadding;
+  const numberOfBars = monthlyData.length;
+  const totalSpacing = 2 * (numberOfBars - 1); // 2px between each bar
+  const barWidth = 12;
+
+  const getChartData = () => {
+    return monthlyData.map((item, index) => ({
       ...item,
       frontColor:
         selectedBarIndex === index
-          ? getColorValue(theme.primary as any, isDarkMode ? 500 : 600)
-          : getColorValue(theme.primary as any, isDarkMode ? 400 : 500),
+          ? themeColor[theme.dark]
+          : themeColor[theme.light],
       gradientColor:
-        selectedBarIndex === index
-          ? getColorValue(theme.primary as any, isDarkMode ? 300 : 400)
-          : getColorValue(theme.primary as any, isDarkMode ? 200 : 300),
+        selectedBarIndex === index ? themeColor[400] : themeColor[300],
       topLabelComponent: () =>
         selectedBarIndex === index ? (
           <Text
             style={{
-              color: getColorValue(
-                theme.primary as any,
-                isDarkMode ? 300 : 700
-              ),
-              fontSize: 12,
+              color: themeColor[700],
+              fontSize: 10,
               fontWeight: "600",
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             {item.value}
@@ -125,29 +141,16 @@ export default function MinimalChart() {
     }));
   };
 
-  const chartWidth = Dimensions.get("window").width - 40;
-
-  const BAR_WIDTHS: Record<TimeRange, number> = {
-    weekly: 36,
-    monthly: 10,
-    yearly: 24,
-  };
-
-  const BAR_SPACING: Record<TimeRange, number> = {
-    weekly: 24,
-    monthly: 3,
-    yearly: 14,
-  };
-
-  const barWidth = BAR_WIDTHS[timeRange];
-  const barSpacing = BAR_SPACING[timeRange];
-
   const bgColors = isDarkMode
-    ? (["#1a1a1a", "#2a2a2a", "#1a1a1a"] as const)
+    ? ([
+        Color[colorThemes[colorTheme].name][900],
+        Color[colorThemes[colorTheme].name][800],
+        Color[colorThemes[colorTheme].name][900],
+      ] as const)
     : ([
-        getColorValue(theme.gradient[0] as any, 50),
-        getColorValue(theme.gradient[1] as any, 50),
-        "white",
+        Color[colorThemes[colorTheme].name][50],
+        "#ffffff",
+        Color[colorThemes[colorTheme].name][50],
       ] as const);
 
   return (
@@ -157,240 +160,147 @@ export default function MinimalChart() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
-        <View style={{ paddingHorizontal: 16 }}>
-          {/* Header */}
-          <View style={{ marginBottom: 16 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ paddingHorizontal: 20 }}>
+          {/* Color Theme Selector */}
+          <View style={{ marginBottom: 20 }}>
             <Text
               style={{
-                fontSize: 16,
-                color: isDarkMode ? "#999999" : getColorValue("gray", 600),
+                ...createTextStyle(isDarkMode, "label"),
+                marginBottom: 12,
               }}
             >
-              Track your performance metrics
+              Choose Theme
             </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12 }}
+            >
+              {(Object.keys(colorThemes) as ColorTheme[]).map((theme) => (
+                <Pressable
+                  key={theme}
+                  onPress={() => {
+                    setColorTheme(theme);
+                    setSelectedBarIndex(null);
+                  }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor:
+                      Color[colorThemes[theme].name as keyof typeof Color][500],
+                    borderWidth: colorTheme === theme ? 3 : 0,
+                    borderColor: isDarkMode ? "#ffffff" : Color.gray[900],
+                    boxShadow:
+                      colorTheme === theme
+                        ? "0px 2px 8px rgba(0,0,0,0.2)"
+                        : "none",
+                  }}
+                />
+              ))}
+            </ScrollView>
           </View>
 
-          {/* Color Theme Selector */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 16 }}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            {(Object.keys(colorThemes) as ColorTheme[]).map((theme) => (
-              <Pressable
-                key={theme}
-                onPress={() => {
-                  setColorTheme(theme);
-                  setSelectedBarIndex(null);
-                }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: getColorValue(
-                    colorThemes[theme].primary as any,
-                    500
-                  ),
-                  borderWidth: colorTheme === theme ? 3 : 0,
-                  borderColor: isDarkMode ? "#ffffff" : "#000000",
-                  marginRight: 8,
-                  boxShadow:
-                    colorTheme === theme
-                      ? "0px 2px 8px rgba(0,0,0,0.15)"
-                      : "none",
-                }}
-              />
-            ))}
-          </ScrollView>
-
-          {/* Time Range Selector */}
+          {/* Month Navigation */}
           <View
             style={{
               flexDirection: "row",
-              alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: isDarkMode
-                ? "#2a2a2a"
-                : getColorValue("gray", 100),
-              borderRadius: 12,
-              padding: 4,
-              marginBottom: 16,
-              boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+              alignItems: "center",
+              marginBottom: 24,
+              ...createCardStyle(isDarkMode),
             }}
           >
-            {(["weekly", "monthly", "yearly"] as TimeRange[]).map((range) => (
-              <Pressable
-                key={range}
-                onPress={() => {
-                  setTimeRange(range);
-                  setSelectedBarIndex(null);
-                }}
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  borderRadius: 8,
-                  backgroundColor:
-                    timeRange === range
-                      ? getColorValue(
-                          theme.primary as any,
-                          isDarkMode ? 600 : 500
-                        )
-                      : "transparent",
-                  marginHorizontal: 2,
-                  boxShadow:
-                    timeRange === range
-                      ? "0px 2px 6px rgba(0,0,0,0.1)"
-                      : "none",
-                }}
-              >
-                <Text
-                  style={{
-                    textAlign: "center",
-                    color:
-                      timeRange === range
-                        ? "#ffffff"
-                        : isDarkMode
-                        ? "#999999"
-                        : getColorValue("gray", 600),
-                    fontWeight: timeRange === range ? "600" : "500",
-                    fontSize: 14,
-                  }}
-                >
-                  {range.charAt(0).toUpperCase() + range.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Month Navigation (only for monthly view) */}
-          {timeRange === "monthly" && (
-            <View
+            <Pressable
+              onPress={() => navigateMonth(-1)}
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 16,
-                paddingHorizontal: 10,
+                padding: 8,
+                borderRadius: 8,
+                backgroundColor: isDarkMode ? Color.gray[700] : Color.gray[100],
               }}
             >
-              <Pressable
-                onPress={() => navigateMonth(-1)}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                  backgroundColor: isDarkMode
-                    ? "#3a3a3a"
-                    : getColorValue("gray", 200),
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    color: isDarkMode ? "#ffffff" : "#000000",
-                  }}
-                >
-                  ←
-                </Text>
-              </Pressable>
-
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: isDarkMode ? "#ffffff" : getColorValue("gray", 900),
+                  fontSize: 20,
+                  color: isDarkMode ? "#ffffff" : Color.gray[900],
                 }}
               >
-                {getMonthName(currentMonth)} {currentYear}
+                ‹
               </Text>
+            </Pressable>
 
-              <Pressable
-                onPress={() => navigateMonth(1)}
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                color: isDarkMode ? Color.white : Color.gray[900],
+              }}
+            >
+              {getMonthName(currentMonth)} {currentYear}
+            </Text>
+
+            <Pressable
+              onPress={() => navigateMonth(1)}
+              style={{
+                padding: 8,
+                borderRadius: 8,
+                backgroundColor: isDarkMode ? Color.gray[700] : Color.gray[100],
+              }}
+            >
+              <Text
                 style={{
-                  padding: 8,
-                  borderRadius: 8,
-                  backgroundColor: isDarkMode
-                    ? "#3a3a3a"
-                    : getColorValue("gray", 200),
+                  fontSize: 20,
+                  color: isDarkMode ? "#ffffff" : Color.gray[900],
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    color: isDarkMode ? "#ffffff" : "#000000",
-                  }}
-                >
-                  →
-                </Text>
-              </Pressable>
-            </View>
-          )}
+                ›
+              </Text>
+            </Pressable>
+          </View>
 
           {/* Chart Container */}
           <View
             style={{
-              backgroundColor: isDarkMode ? "#2a2a2a" : "white",
-              borderRadius: 20,
-              padding: 20,
-              marginBottom: 16,
-              boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+              ...createCardStyle(isDarkMode),
+              marginBottom: 20,
             }}
           >
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <BarChart
-                barMarginBottom={0}
-                width={
-                  chartWidth
-                  // timeRange === "monthly"
-                  //   ? Math.max(
-                  //       chartWidth,
-                  //       getDataForTimeRange().length * (barWidth + barSpacing)
-                  //     )
-                  //   : chartWidth
-                }
-                height={220}
-                noOfSections={4}
-                barWidth={barWidth}
-                spacing={barSpacing}
-                initialSpacing={16}
-                endSpacing={16}
-                barBorderRadius={12}
-                data={getDataForTimeRange()}
-                yAxisThickness={0}
-                xAxisThickness={0}
-                hideYAxisText
-                xAxisLabelTextStyle={{
-                  color: isDarkMode ? "#666666" : getColorValue("gray", 500),
-                  fontSize: 11,
-                  fontWeight: "500",
-                }}
-                showXAxisIndices={false}
-                renderTooltip={() => null}
-                disableScroll={timeRange !== "monthly"}
-                isAnimated
-                animationDuration={500}
-                onPress={(_item: BarData, index: number) => {
-                  setSelectedBarIndex(
-                    selectedBarIndex === index ? null : index
-                  );
-                }}
-                showGradient
-                gradientColor={getColorValue(
-                  theme.primary as any,
-                  isDarkMode ? 200 : 300
-                )}
-                frontColor={getColorValue(
-                  theme.primary as any,
-                  isDarkMode ? 400 : 500
-                )}
-                backgroundColor="transparent"
-                rulesType="solid"
-                rulesColor={isDarkMode ? "#3a3a3a" : getColorValue("gray", 200)}
-                dashGap={0}
-              />
-            </ScrollView>
+            <BarChart
+              barMarginBottom={0}
+              width={availableWidth}
+              height={200}
+              noOfSections={4}
+              barWidth={barWidth}
+              spacing={10}
+              barBorderRadius={4}
+              data={getChartData()}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideYAxisText
+              xAxisLabelTextStyle={{
+                color: isDarkMode ? Color.gray[500] : Color.gray[400],
+                fontSize: 9,
+                fontWeight: "500",
+              }}
+              showXAxisIndices={false}
+              renderTooltip={() => null}
+              isAnimated
+              animationDuration={300}
+              onPress={(_item: BarData, index: number) => {
+                setSelectedBarIndex(selectedBarIndex === index ? null : index);
+              }}
+              showGradient
+              gradientColor={themeColor[300]}
+              frontColor={themeColor[500]}
+              backgroundColor="transparent"
+              rulesType="solid"
+              rulesColor={isDarkMode ? Color.gray[700] : Color.gray[200]}
+              dashGap={0}
+            />
           </View>
 
           {/* Stats Cards */}
@@ -399,100 +309,51 @@ export default function MinimalChart() {
               flexDirection: "row",
               justifyContent: "space-between",
               gap: 12,
+              marginBottom: 20,
             }}
           >
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: isDarkMode ? "#2a2a2a" : "white",
-                borderRadius: 16,
-                padding: 16,
-                boxShadow: "0px 2px 8px rgba(0,0,0,0.05)",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDarkMode ? "#999999" : getColorValue("gray", 600),
-                  marginBottom: 4,
-                }}
-              >
-                Average
-              </Text>
+            <View style={{ flex: 1, ...createCardStyle(isDarkMode) }}>
+              <Text style={createTextStyle(isDarkMode, "label")}>Average</Text>
               <Text
                 style={{
                   fontSize: 24,
                   fontWeight: "700",
-                  color: isDarkMode ? "#ffffff" : getColorValue("gray", 900),
+                  color: isDarkMode ? Color.white : Color.gray[900],
+                  marginTop: 4,
                 }}
               >
                 {Math.round(
-                  getDataForTimeRange().reduce(
-                    (sum, item) => sum + item.value,
-                    0
-                  ) / getDataForTimeRange().length
+                  monthlyData.reduce((sum, item) => sum + item.value, 0) /
+                    monthlyData.length
                 )}
               </Text>
             </View>
 
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: isDarkMode ? "#2a2a2a" : "white",
-                borderRadius: 16,
-                padding: 16,
-                boxShadow: "0px 2px 8px rgba(0,0,0,0.05)",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDarkMode ? "#999999" : getColorValue("gray", 600),
-                  marginBottom: 4,
-                }}
-              >
-                Total
-              </Text>
+            <View style={{ flex: 1, ...createCardStyle(isDarkMode) }}>
+              <Text style={createTextStyle(isDarkMode, "label")}>Total</Text>
               <Text
                 style={{
                   fontSize: 24,
                   fontWeight: "700",
-                  color: isDarkMode ? "#ffffff" : getColorValue("gray", 900),
+                  color: isDarkMode ? Color.white : Color.gray[900],
+                  marginTop: 4,
                 }}
               >
-                {getDataForTimeRange().reduce(
-                  (sum, item) => sum + item.value,
-                  0
-                )}
+                {monthlyData.reduce((sum, item) => sum + item.value, 0)}
               </Text>
             </View>
 
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: isDarkMode ? "#2a2a2a" : "white",
-                borderRadius: 16,
-                padding: 16,
-                boxShadow: "0px 2px 8px rgba(0,0,0,0.05)",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDarkMode ? "#999999" : getColorValue("gray", 600),
-                  marginBottom: 4,
-                }}
-              >
-                Peak
-              </Text>
+            <View style={{ flex: 1, ...createCardStyle(isDarkMode) }}>
+              <Text style={createTextStyle(isDarkMode, "label")}>Peak</Text>
               <Text
                 style={{
                   fontSize: 24,
                   fontWeight: "700",
-                  color: isDarkMode ? "#ffffff" : getColorValue("gray", 900),
+                  color: isDarkMode ? Color.white : Color.gray[900],
+                  marginTop: 4,
                 }}
               >
-                {Math.max(...getDataForTimeRange().map((item) => item.value))}
+                {Math.max(...monthlyData.map((item) => item.value))}
               </Text>
             </View>
           </View>
