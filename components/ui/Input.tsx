@@ -1,4 +1,3 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   InputColorConfig,
   RADIUS_VALUES,
@@ -13,10 +12,9 @@ import { StyleSheet, TextInput, type TextInputProps } from "react-native";
 type InputVariant = "outline" | "soft" | "subtle" | "underline";
 
 const generateVariantConfig = (
-  color: UIColor,
-  colorScheme: "light" | "dark"
+  color: UIColor
 ): Record<InputVariant, InputColorConfig> => {
-  const isDark = colorScheme === "dark";
+  const isDark = false;
 
   if (color === "black") {
     const bgColor = getColorValue("black", 50);
@@ -148,12 +146,10 @@ export const Input = forwardRef<TextInput, ThemedInputProps>(
     },
     ref
   ) => {
-    const colorScheme = useColorScheme();
-
     const variantConfig = useMemo(() => {
-      const variants = generateVariantConfig(color, colorScheme ?? "light");
+      const variants = generateVariantConfig(color);
       return variants[variant];
-    }, [color, colorScheme, variant]);
+    }, [color, variant]);
 
     const inputStyles = useMemo(() => {
       const baseStyles = {

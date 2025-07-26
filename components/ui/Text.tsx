@@ -4,11 +4,7 @@ import {
   type TextProps as RNTextProps,
 } from "react-native";
 
-import { useThemeColor } from "@/hooks/useThemeColor";
-
 export type TextProps = RNTextProps & {
-  lightColor?: string;
-  darkColor?: string;
   /**
    * Text size variants inspired by TailwindCSS.
    * "default" and "base" are aliases for the same size (16 / 24).
@@ -46,19 +42,16 @@ export type TextProps = RNTextProps & {
 
 export function Text({
   style,
-  lightColor,
-  darkColor,
   type = "default",
   weight,
   ...rest
 }: TextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
-
   const sizeStyle = sizeStyles[type];
   const weightStyle = weight ? weightStyles[weight] : undefined;
+  const defaultColor = type === "link" ? "#0a7ea4" : "#09090b";
 
   return (
-    <RNText style={[{ color }, sizeStyle, weightStyle, style]} {...rest} />
+    <RNText style={[{ color: defaultColor }, sizeStyle, weightStyle, style]} {...rest} />
   );
 }
 

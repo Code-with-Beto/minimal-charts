@@ -1,4 +1,3 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   ColorConfig,
   getColorValue,
@@ -16,10 +15,9 @@ import { Text } from "./Text";
 type ButtonVariant = "solid" | "outline" | "soft" | "subtle" | "link";
 
 const generateVariantConfig = (
-  color: UIColor,
-  colorScheme: "light" | "dark"
+  color: UIColor
 ): Record<ButtonVariant, ColorConfig> => {
-  const isDark = colorScheme === "dark";
+  const isDark = false;
 
   if (color === "black") {
     const bgColor = getColorValue("black", 50);
@@ -164,7 +162,6 @@ export function Button({
   style,
   symbol,
 }: ButtonProps) {
-  const colorScheme = useColorScheme();
   const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -189,9 +186,9 @@ export function Button({
   });
 
   const variantConfig = useMemo(() => {
-    const variants = generateVariantConfig(color, colorScheme ?? "light");
+    const variants = generateVariantConfig(color);
     return variants[variant];
-  }, [color, colorScheme, variant]);
+  }, [color, variant]);
 
   const isDisabled = disabled || loading;
 
